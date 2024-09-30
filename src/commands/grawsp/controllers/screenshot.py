@@ -1,17 +1,12 @@
-import re
-import urllib
-import datetime
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
 import base64
+import datetime
+import re
 from time import sleep
+
 from cement import Controller
 from inflection import transliterate
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from sqlalchemy.orm import Session
 
 from ....services.aws.sts import get_console_url
@@ -71,13 +66,12 @@ class ScreenShotController(Controller):
         ]
 
     def _default(self) -> None:
-        browser_name = "firefox-custom"
         database_engine = self.app.database_engine
 
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument(
-            "--window-size=%s" % self.app.config.get("screenshot", "resolution")
+            "--window-size={}".format(self.app.config.get("screenshot", "resolution"))
         )
 
         identifier = self.app.pargs.identifier
@@ -195,14 +189,14 @@ class ScreenShotController(Controller):
                 # encoded_console_url = urllib.parse.quote(console_url)
 
                 cookie_pref = base64.b64encode(
-                    '{"e":1,"p":1,"f":1,"a":1,"i":"71039ed2-6d13-4476-9af3-a4ac0898e71c","v":"1"}'.encode()
+                    b'{"e":1,"p":1,"f":1,"a":1,"i":"71039ed2-6d13-4476-9af3-a4ac0898e71c","v":"1"}'
                 ).decode()
 
                 # don't reuse the driver
                 driver = webdriver.Chrome(options=chrome_options)
-                wait = WebDriverWait(
-                    driver, self.app.config.get("screenshot", "timeout")
-                )  #
+                # wait = WebDriverWait(
+                #     driver, self.app.config.get("screenshot", "timeout")
+                # )  #
 
                 try:
                     # Navigate to the console URL
@@ -244,12 +238,8 @@ class ScreenShotController(Controller):
 
                         # Wait for the page to load
                         # wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                        # the wait onlu seems to work the first page, so we sleep instead
                         sleep(self.app.config.get("screenshot", "sleep"))
-
-                        # def is_page_loaded(driver):
-                        #     return driver.execute_script("return document.readyState") == "complete"
-
-                        # wait.until(is_page_loaded)
 
                         # screenshot name
                         output_date = datetime.datetime.now().strftime(
@@ -270,6 +260,6 @@ class ScreenShotController(Controller):
 
                 finally:
                     driver.quit()
-                    spinner.info(f"Closed session")
+                    spinner.info("Closed session")
 
             spinner.success("All done")
